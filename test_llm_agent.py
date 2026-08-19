@@ -1,6 +1,7 @@
+from copy import deepcopy
 from types import SimpleNamespace
 
-from llm_agent import LLMToolAgent, MISSING_KEY_MESSAGE
+from llm_agent import LLMToolAgent, MISSING_KEY_MESSAGE, TOOL_SCHEMAS
 
 
 class FakeClient:
@@ -12,7 +13,7 @@ class FakeClient:
         )
 
     def create(self, **kwargs):
-        self.calls.append(kwargs)
+        self.calls.append(deepcopy(kwargs))
         response = next(self.responses)
         if isinstance(response, Exception):
             raise response
@@ -64,8 +65,9 @@ def test_agent_executes_single_tool_call_and_returns_final_model_response():
         "tool_call_id": "call_1",
         "content": "HELLO",
     }
-    assert "tools" not in client.calls[1]
-    assert "tool_choice" not in client.calls[1]
+    assert "tools" in client.calls[1]
+    assert client.calls[1]["tools"] == TOOL_SCHEMAS
+    assert client.calls[1].get("tool_choice") == "auto"
 
 
 def test_agent_returns_readable_error_when_final_model_request_fails():
@@ -178,3 +180,97 @@ def test_agent_executes_summarize_text_tool():
         "tool_call_id": "call_summary",
         "content": "第一句。第二句。",
     }
+
+def test_agent_executes_two_tools_in_sequence_before_answering():
+    first_tool_call = SimpleNamespace(
+        id="call_upper",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "hello agent"}',
+        ),
+    )
+    second_tool_call = SimpleNamespace(
+        id="call_count",
+        function=SimpleNamespace(
+            name="count_words",
+            arguments='{"text": "HELLO AGENT"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(SimpleNamespace(content=None, tool_calls=[first_tool_call])),
+            response_with(SimpleNamespace(content=None, tool_calls=[second_tool_call])),
+            response_with(
+                SimpleNamespace(
+                    content="大写后共有 2 个英文单词。",
+                    tool_calls=None,
+                )
+            ),
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run(
+        "先把 hello agent 转为大写，再统计单词数"
+    )
+
+    assert result == "大写后共有 2 个英文单词。"
+    assert len(client.calls) == 3
+    assert client.calls[1]["messages"][-1] == {
+        "role": "tool",
+        "tool_call_id": "call_upper",
+        "content": "HELLO AGENT",
+    }
+    assert client.calls[2]["messages"][-1] == {
+        "role": "tool",
+        "tool_call_id": "call_count",
+        "content": "2",
+    }
+def test_agent_forces_final_answer_after_three_tool_calls():
+    first_tool_call = SimpleNamespace(
+        id="call_1",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "one"}',
+        ),
+    )
+    second_tool_call = SimpleNamespace(
+        id="call_2",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "two"}',
+        ),
+    )
+    third_tool_call = SimpleNamespace(
+        id="call_3",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "three"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(SimpleNamespace(content=None, tool_calls=[first_tool_call])),
+            response_with(SimpleNamespace(content=None, tool_calls=[second_tool_call])),
+            response_with(SimpleNamespace(content=None, tool_calls=[third_tool_call])),
+            response_with(
+                SimpleNamespace(
+                    content="已完成三次工具调用。",
+                    tool_calls=None,
+                )
+            ),
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run(
+        "连续处理三段文本"
+    )
+
+    assert result == "已完成三次工具调用。"
+    assert len(client.calls) == 4
+    assert client.calls[3]["messages"][-1] == {
+        "role": "tool",
+        "tool_call_id": "call_3",
+        "content": "THREE",
+    }
+    assert "tools" not in client.calls[3]
+    assert "tool_choice" not in client.calls[3]

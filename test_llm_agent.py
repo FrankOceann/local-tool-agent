@@ -136,3 +136,20 @@ def test_agent_rejects_non_string_text_argument():
 
     assert LLMToolAgent(client=client, api_key="test-key").run("大写") == "工具参数 text 必须是字符串。"
     assert len(client.calls) == 1
+
+def test_agent_sends_system_identity_and_capability_boundaries_to_model():
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(content="我是本地文本助手。", tool_calls=None),
+            )
+        ]
+    )
+
+    LLMToolAgent(client=client, api_key="test-key").run("你是谁？")
+
+    first_message = client.calls[0]["messages"][0]
+    assert first_message["role"] == "system"
+    assert "DeepSeek 驱动" in first_message["content"]
+    assert "不是 Claude、Anthropic" in first_message["content"]
+    assert "联网" in first_message["content"]

@@ -1,5 +1,6 @@
 from tools import count_words, upper_text
 from agent import LocalToolAgent
+import tools
 
 def test_upper_text():
     assert upper_text("hello") == "HELLO"
@@ -33,3 +34,9 @@ def test_run_once_returns_llm_tool_agent_result(monkeypatch):
     monkeypatch.setattr(LLMToolAgent, "run", lambda self, request: "MODEL RESULT")
 
     assert run_once("任意请求") == "MODEL RESULT"
+
+def test_summarize_text_keeps_first_two_sentences():
+    summarize_text = getattr(tools, "summarize_text", None)
+
+    assert summarize_text is not None
+    assert summarize_text("第一句。第二句。第三句。") == "第一句。第二句。"

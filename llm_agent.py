@@ -3,8 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
-
-from tools import count_words, upper_text
+from tools import count_words, summarize_text, upper_text
 
 
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
@@ -15,8 +14,9 @@ BASE_URL = "https://api.deepseek.com"
 SYSTEM_PROMPT = (
     "你是一个由 DeepSeek 驱动的本地 Tool Agent。"
     "你不是 Claude、Anthropic 或 OpenAI 的官方助手。"
-    "你目前只能使用 upper_text（把文本转为大写）和 "
-    "count_words（统计英文单词）两个本地工具。"
+    "你目前可以使用 upper_text（把文本转为大写）、"
+    "count_words（统计英文单词）和 summarize_text（保留文本前两句作为摘要）"
+    "三个本地工具。"
     "没有对应工具时，不要声称你可以联网、查询实时数据、读取文件或执行外部操作。"
 )
 TOOL_SCHEMAS = [
@@ -44,6 +44,18 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "summarize_text",
+            "description": "Keep the first two sentences as a short summary.",
+            "parameters": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}},
+                "required": ["text"],
+            },
+        },
+    },
 ]
 
 
@@ -52,7 +64,11 @@ class LLMToolAgent:
         load_dotenv()
         self.client = client
         self.api_key = api_key if api_key is not None else os.getenv("DEEPSEEK_API_KEY")
-        self.tool_registry = {"upper_text": upper_text, "count_words": count_words}
+        self.tool_registry = {
+            "upper_text": upper_text,
+            "count_words": count_words,
+            "summarize_text": summarize_text,
+}
         if self.client is None and self.api_key:
             self.client = OpenAI(api_key=self.api_key, base_url=BASE_URL)
 

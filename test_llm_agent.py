@@ -153,3 +153,28 @@ def test_agent_sends_system_identity_and_capability_boundaries_to_model():
     assert "DeepSeek 驱动" in first_message["content"]
     assert "不是 Claude、Anthropic" in first_message["content"]
     assert "联网" in first_message["content"]
+    assert "summarize_text" in first_message["content"]
+
+def test_agent_executes_summarize_text_tool():
+    tool_call = SimpleNamespace(
+        id="call_summary",
+        function=SimpleNamespace(
+            name="summarize_text",
+            arguments='{"text": "第一句。第二句。第三句。"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(SimpleNamespace(content=None, tool_calls=[tool_call])),
+            response_with(SimpleNamespace(content="摘要：第一句。第二句。", tool_calls=None)),
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run("请总结这段文字")
+
+    assert result == "摘要：第一句。第二句。"
+    assert client.calls[1]["messages"][-1] == {
+        "role": "tool",
+        "tool_call_id": "call_summary",
+        "content": "第一句。第二句。",
+    }

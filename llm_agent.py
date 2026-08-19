@@ -87,5 +87,15 @@ class LLMToolAgent:
     def _run_tool(
         self, name: str, arguments_json: str
     ) -> tuple[str | int | None, str | None]:
-        arguments = json.loads(arguments_json)
+        if name not in self.tool_registry:
+            return None, f"模型请求了不支持的工具: {name}"
+
+        try:
+            arguments = json.loads(arguments_json)
+        except json.JSONDecodeError:
+            return None, "模型返回的工具参数不是有效 JSON。"
+
+        if not isinstance(arguments, dict) or not isinstance(arguments.get("text"), str):
+            return None, "工具参数 text 必须是字符串。"
+
         return self.tool_registry[name](arguments["text"]), None

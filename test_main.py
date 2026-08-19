@@ -25,8 +25,11 @@ def test_agent_rejects_unsupported_request():
         "暂不支持这个请求。可使用：大写 <文字> 或 统计单词 <英文文字>"
     )
 
+from llm_agent import LLMToolAgent
 from main import run_once
 
 
-def test_run_once_returns_agent_result():
-    assert run_once("大写 codex") == "CODEX"
+def test_run_once_returns_llm_tool_agent_result(monkeypatch):
+    monkeypatch.setattr(LLMToolAgent, "run", lambda self, request: "MODEL RESULT")
+
+    assert run_once("任意请求") == "MODEL RESULT"

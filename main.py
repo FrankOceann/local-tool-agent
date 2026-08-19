@@ -1,7 +1,7 @@
-from agent import LocalToolAgent
+from llm_agent import LLMToolAgent
 
 
-agent = LocalToolAgent()
+agent = LLMToolAgent()
 
 
 def run_once(request: str) -> str:

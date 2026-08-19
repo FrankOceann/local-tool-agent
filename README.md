@@ -16,6 +16,22 @@ python main.py
 python -m pytest -q
 ```
 
+## DeepSeek 配置
+
+安装依赖：
+
+```bat
+python -m pip install -r requirements.txt
+```
+
+在项目根目录创建 `.env` 文件：
+
+```text
+DEEPSEEK_API_KEY=你的_DeepSeek_API_Key
+```
+
+`.env` 已被忽略；真实密钥绝不能进入代码、README 或提交记录。
+
 ## 流程
 
-用户输入 → LocalToolAgent 选择工具 → tools.py 执行 → 输出结果
+用户输入 → LLMToolAgent → DeepSeek 选择工具 → tools.py 执行 → 工具结果回传 DeepSeek → 输出最终回答

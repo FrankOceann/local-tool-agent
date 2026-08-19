@@ -8,6 +8,8 @@ from tools import count_words, upper_text
 
 
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
+API_CALL_ERROR_MESSAGE = "调用模型服务失败，请稍后重试。"
+MULTIPLE_TOOL_CALLS_MESSAGE = "模型一次请求了多个工具，当前仅支持一个工具调用。"
 MODEL_NAME = "deepseek-v4-flash"
 BASE_URL = "https://api.deepseek.com"
 TOOL_SCHEMAS = [
@@ -52,16 +54,22 @@ class LLMToolAgent:
             return MISSING_KEY_MESSAGE
 
         messages = [{"role": "user", "content": request}]
-        response = self.client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            tools=TOOL_SCHEMAS,
-            tool_choice="auto",
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                tools=TOOL_SCHEMAS,
+                tool_choice="auto",
+            )
+        except Exception:
+            return API_CALL_ERROR_MESSAGE
         assistant_message = response.choices[0].message
 
         if not assistant_message.tool_calls:
             return assistant_message.content or "模型没有返回可显示的回答。"
+
+        if len(assistant_message.tool_calls) != 1:
+            return MULTIPLE_TOOL_CALLS_MESSAGE
 
         tool_call = assistant_message.tool_calls[0]
         result, error = self._run_tool(tool_call.function.name, tool_call.function.arguments)
@@ -76,12 +84,13 @@ class LLMToolAgent:
                 "content": str(result),
             }
         )
-        final_response = self.client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            tools=TOOL_SCHEMAS,
-            tool_choice="auto",
-        )
+        try:
+            final_response = self.client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+            )
+        except Exception:
+            return API_CALL_ERROR_MESSAGE
         return final_response.choices[0].message.content or "模型没有返回可显示的回答。"
 
     def _run_tool(

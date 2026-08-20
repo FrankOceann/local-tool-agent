@@ -1,4 +1,4 @@
-from tools import count_words, upper_text
+from tools import count_words, save_note, upper_text
 from agent import LocalToolAgent
 import tools
 
@@ -40,3 +40,6 @@ def test_summarize_text_keeps_first_two_sentences():
 
     assert summarize_text is not None
     assert summarize_text("第一句。第二句。第三句。") == "第一句。第二句。"
+
+def test_save_note_returns_a_simulated_success_message():
+    assert save_note("明天学习 Agent") == "已模拟保存笔记：明天学习 Agent"

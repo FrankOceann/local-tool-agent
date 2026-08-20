@@ -172,7 +172,7 @@ python -m pytest -q
 当前应看到：
 
 ```text
-29 passed
+30 passed
 ```
 
 ## Agent 工作流程

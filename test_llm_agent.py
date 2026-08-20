@@ -541,3 +541,9 @@ def test_agent_rejects_mixed_confirmation_and_auto_tools_in_one_batch():
     )
     assert len(client.calls) == 1
     assert agent.pending_tool_call is None
+
+def test_agent_handles_confirmation_commands_without_an_api_key():
+    agent = LLMToolAgent(api_key="")
+
+    assert agent.run("确认") == "当前没有待确认的操作。"
+    assert agent.run("取消") == "当前没有待确认的操作。"

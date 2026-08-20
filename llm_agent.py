@@ -89,12 +89,12 @@ class LLMToolAgent:
             self.client = OpenAI(api_key=self.api_key, base_url=BASE_URL)
 
     def run(self, request: str) -> str:
-        if not self.api_key:
-            return MISSING_KEY_MESSAGE
-
         pending_result = self._handle_pending_tool_call(request)
         if pending_result is not None:
             return pending_result
+
+        if not self.api_key:
+            return MISSING_KEY_MESSAGE
 
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},

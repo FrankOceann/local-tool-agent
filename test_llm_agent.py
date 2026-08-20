@@ -501,3 +501,43 @@ def test_agent_keeps_pending_operation_when_user_enters_other_text():
     )
     assert agent.pending_tool_call is not None
     assert len(client.calls) == 1
+
+def test_agent_rejects_mixed_confirmation_and_auto_tools_in_one_batch():
+    upper_call = SimpleNamespace(
+        id="call_upper",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "hello"}',
+        ),
+    )
+    save_call = SimpleNamespace(
+        id="call_save",
+        function=SimpleNamespace(
+            name="save_note",
+            arguments='{"text": "明天学习 Agent"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=[upper_call, save_call],
+                )
+            ),
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+
+    agent.tool_registry["upper_text"] = lambda _text: (
+        _ for _ in ()
+    ).throw(AssertionError("混合批次不应执行自动工具"))
+    agent.tool_registry["save_note"] = lambda _text: (
+        _ for _ in ()
+    ).throw(AssertionError("混合批次不应执行敏感工具"))
+
+    assert agent.run("大写并保存") == (
+        "同一轮请求包含需要确认的工具，当前不支持与其他工具混合执行。"
+    )
+    assert len(client.calls) == 1
+    assert agent.pending_tool_call is None

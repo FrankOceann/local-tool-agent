@@ -428,3 +428,76 @@ def test_agent_stops_when_a_later_tool_in_one_batch_is_invalid():
 
     assert result == "模型返回的工具参数不是有效 JSON。"
     assert len(client.calls) == 1
+
+def test_agent_requires_confirmation_before_simulating_note_save():
+    tool_call = SimpleNamespace(
+        id="call_save",
+        function=SimpleNamespace(
+            name="save_note",
+            arguments='{"text": "明天学习 Agent"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(content=None, tool_calls=[tool_call]),
+            ),
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+
+    assert agent.run("保存一条笔记") == (
+        "操作需要确认：将模拟保存笔记“明天学习 Agent”。请输入“确认”或“取消”。"
+    )
+    assert len(client.calls) == 1
+
+    assert agent.run("确认") == "已模拟保存笔记：明天学习 Agent"
+    assert len(client.calls) == 1
+    assert agent.pending_tool_call is None
+
+def create_agent_with_pending_note_save():
+    tool_call = SimpleNamespace(
+        id="call_save",
+        function=SimpleNamespace(
+            name="save_note",
+            arguments='{"text": "明天学习 Agent"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(content=None, tool_calls=[tool_call]),
+            ),
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+
+    assert agent.run("保存一条笔记") == (
+        "操作需要确认：将模拟保存笔记“明天学习 Agent”。请输入“确认”或“取消”。"
+    )
+    return agent, client
+
+
+def test_agent_cancels_a_pending_note_save():
+    agent, client = create_agent_with_pending_note_save()
+
+    assert agent.run("取消") == "已取消待确认的操作。"
+    assert agent.pending_tool_call is None
+    assert len(client.calls) == 1
+
+
+def test_agent_reports_when_confirmation_has_nothing_to_confirm():
+    agent = LLMToolAgent(client=FakeClient([]), api_key="test-key")
+
+    assert agent.run("确认") == "当前没有待确认的操作。"
+    assert agent.run("取消") == "当前没有待确认的操作。"
+
+
+def test_agent_keeps_pending_operation_when_user_enters_other_text():
+    agent, client = create_agent_with_pending_note_save()
+
+    assert agent.run("换一条笔记") == (
+        "当前有待确认的操作，请输入“确认”或“取消”。"
+    )
+    assert agent.pending_tool_call is not None
+    assert len(client.calls) == 1

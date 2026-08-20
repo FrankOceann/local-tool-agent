@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from tools import count_words, summarize_text, upper_text
+from tools import TOOL_PERMISSIONS, count_words, save_note, summarize_text, upper_text
 
 
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
@@ -57,6 +57,18 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_note",
+            "description": "Simulate saving a note after user confirmation.",
+            "parameters": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}},
+                "required": ["text"],
+            },
+        },
+    },
 ]
 
 
@@ -69,13 +81,20 @@ class LLMToolAgent:
             "upper_text": upper_text,
             "count_words": count_words,
             "summarize_text": summarize_text,
-}
+            "save_note": save_note,
+        }
+        self.pending_tool_call: dict[str, str] | None = None
+
         if self.client is None and self.api_key:
             self.client = OpenAI(api_key=self.api_key, base_url=BASE_URL)
 
     def run(self, request: str) -> str:
         if not self.api_key:
             return MISSING_KEY_MESSAGE
+
+        pending_result = self._handle_pending_tool_call(request)
+        if pending_result is not None:
+            return pending_result
 
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -105,10 +124,28 @@ class LLMToolAgent:
             messages.append(assistant_message)
 
             for tool_call in assistant_message.tool_calls:
-                result, error = self._run_tool(
-                    tool_call.function.name,
-                    tool_call.function.arguments,
+                name = tool_call.function.name
+                arguments_json = tool_call.function.arguments
+
+                arguments, error = self._parse_tool_arguments(
+                    name,
+                    arguments_json,
                 )
+                if error:
+                    return error
+
+                if TOOL_PERMISSIONS[name] == "confirmation_required":
+                    self.pending_tool_call = {
+                        "name": name,
+                        "arguments_json": arguments_json,
+                        "tool_call_id": tool_call.id,
+                    }
+                    return (
+                        f"操作需要确认：将模拟保存笔记“{arguments['text']}”。"
+                        "请输入“确认”或“取消”。"
+                    )
+
+                result, error = self._run_tool(name, arguments_json)
                 if error:
                     return error
 
@@ -131,9 +168,35 @@ class LLMToolAgent:
 
         return final_response.choices[0].message.content or "模型没有返回可显示的回答。"
 
-    def _run_tool(
+    def _handle_pending_tool_call(self, request: str) -> str | None:
+        cleaned_request = request.strip()
+
+        if self.pending_tool_call is None:
+            if cleaned_request in {"确认", "取消"}:
+                return "当前没有待确认的操作。"
+            return None
+
+        if cleaned_request == "取消":
+            self.pending_tool_call = None
+            return "已取消待确认的操作。"
+
+        if cleaned_request != "确认":
+            return "当前有待确认的操作，请输入“确认”或“取消”。"
+
+        pending = self.pending_tool_call
+        result, error = self._run_tool(
+            pending["name"],
+            pending["arguments_json"],
+        )
+        if error:
+            return error
+
+        self.pending_tool_call = None
+        return str(result)
+
+    def _parse_tool_arguments(
         self, name: str, arguments_json: str
-    ) -> tuple[str | int | None, str | None]:
+    ) -> tuple[dict[str, str] | None, str | None]:
         if name not in self.tool_registry:
             return None, f"模型请求了不支持的工具: {name}"
 
@@ -144,5 +207,14 @@ class LLMToolAgent:
 
         if not isinstance(arguments, dict) or not isinstance(arguments.get("text"), str):
             return None, "工具参数 text 必须是字符串。"
+
+        return arguments, None
+
+    def _run_tool(
+        self, name: str, arguments_json: str
+    ) -> tuple[str | int | None, str | None]:
+        arguments, error = self._parse_tool_arguments(name, arguments_json)
+        if error:
+            return None, error
 
         return self.tool_registry[name](arguments["text"]), None

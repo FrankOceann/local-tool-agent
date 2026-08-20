@@ -86,25 +86,7 @@ def test_agent_returns_readable_error_when_final_model_request_fails():
     assert len(client.calls) == 2
 
 
-def test_agent_rejects_multiple_tool_calls_before_execution():
-    first_tool_call = SimpleNamespace(
-        id="call_1",
-        function=SimpleNamespace(name="upper_text", arguments='{"text": "hello"}'),
-    )
-    second_tool_call = SimpleNamespace(
-        id="call_2",
-        function=SimpleNamespace(name="count_words", arguments='{"text": "hello world"}'),
-    )
-    client = FakeClient(
-        [response_with(SimpleNamespace(content=None, tool_calls=[first_tool_call, second_tool_call]))]
-    )
-    agent = LLMToolAgent(client=client, api_key="test-key")
-    agent.tool_registry["upper_text"] = lambda _text: (_ for _ in ()).throw(
-        AssertionError("不应执行工具")
-    )
 
-    assert agent.run("同时调用两个工具") == "模型一次请求了多个工具，当前仅支持一个工具调用。"
-    assert len(client.calls) == 1
 
 
 def test_agent_rejects_unknown_tool_without_second_model_request():
@@ -274,3 +256,175 @@ def test_agent_forces_final_answer_after_three_tool_calls():
     }
     assert "tools" not in client.calls[3]
     assert "tool_choice" not in client.calls[3]
+
+def test_agent_executes_two_tool_calls_from_one_model_response():
+    upper_call = SimpleNamespace(
+        id="call_upper",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "hello"}',
+        ),
+    )
+    count_call = SimpleNamespace(
+        id="call_count",
+        function=SimpleNamespace(
+            name="count_words",
+            arguments='{"text": "I am learning"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=[upper_call, count_call],
+                )
+            ),
+            response_with(
+                SimpleNamespace(
+                    content="大写结果是 HELLO，英文单词数量是 3。",
+                    tool_calls=None,
+                )
+            ),
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run(
+        "同时处理两段文本"
+    )
+
+    assert result == "大写结果是 HELLO，英文单词数量是 3。"
+    assert len(client.calls) == 2
+    assert client.calls[1]["messages"][-2:] == [
+        {
+            "role": "tool",
+            "tool_call_id": "call_upper",
+            "content": "HELLO",
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_count",
+            "content": "3",
+        },
+    ]
+
+def test_agent_rejects_four_tool_calls_in_one_model_response():
+    tool_calls = [
+        SimpleNamespace(
+            id=f"call_{index}",
+            function=SimpleNamespace(
+                name="upper_text",
+                arguments=f'{{"text": "text {index}"}}',
+            ),
+        )
+        for index in range(4)
+    ]
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=tool_calls,
+                )
+            )
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+    agent.tool_registry["upper_text"] = lambda _text: (_ for _ in ()).throw(
+        AssertionError("超过上限时不应执行任何工具")
+    )
+
+    assert agent.run("一次调用四个工具") == "本次请求最多执行 3 次工具调用。"
+    assert len(client.calls) == 1
+
+def test_agent_rejects_a_batch_that_exceeds_remaining_tool_call_limit():
+    call_1 = SimpleNamespace(
+        id="call_1",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "one"}',
+        ),
+    )
+    call_2 = SimpleNamespace(
+        id="call_2",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "two"}',
+        ),
+    )
+    call_3 = SimpleNamespace(
+        id="call_3",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "three"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=[call_1, call_2],
+                )
+            ),
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=[call_3, call_1],
+                )
+            ),
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+    executed_texts = []
+    agent.tool_registry["upper_text"] = (
+        lambda text: executed_texts.append(text) or text.upper()
+    )
+
+    result = agent.run("连续调用")
+
+    assert result == "本次请求最多执行 3 次工具调用。"
+    assert len(client.calls) == 2
+    assert executed_texts == ["one", "two"]
+
+def test_agent_stops_when_a_later_tool_in_one_batch_is_invalid():
+    good_call = SimpleNamespace(
+        id="call_good",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments='{"text": "hello"}',
+        ),
+    )
+    bad_call = SimpleNamespace(
+        id="call_bad",
+        function=SimpleNamespace(
+            name="upper_text",
+            arguments="not-json",
+        ),
+    )
+    skipped_call = SimpleNamespace(
+        id="call_skipped",
+        function=SimpleNamespace(
+            name="count_words",
+            arguments='{"text": "one two"}',
+        ),
+    )
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=None,
+                    tool_calls=[good_call, bad_call, skipped_call],
+                )
+            )
+        ]
+    )
+    agent = LLMToolAgent(client=client, api_key="test-key")
+    agent.tool_registry["count_words"] = lambda _text: (
+        _ for _ in ()
+    ).throw(AssertionError("失败后不应执行后续工具"))
+
+    result = agent.run("批内包含错误参数")
+
+    assert result == "模型返回的工具参数不是有效 JSON。"
+    assert len(client.calls) == 1

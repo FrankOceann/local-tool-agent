@@ -8,7 +8,7 @@ from tools import count_words, summarize_text, upper_text
 
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
 API_CALL_ERROR_MESSAGE = "调用模型服务失败，请稍后重试。"
-MULTIPLE_TOOL_CALLS_MESSAGE = "模型一次请求了多个工具，当前仅支持一个工具调用。"
+TOOL_CALL_LIMIT_MESSAGE = "本次请求最多执行 3 次工具调用。"
 MODEL_NAME = "deepseek-v4-flash"
 BASE_URL = "https://api.deepseek.com"
 MAX_TOOL_CALLS = 3
@@ -82,7 +82,9 @@ class LLMToolAgent:
             {"role": "user", "content": request},
         ]
 
-        for _ in range(MAX_TOOL_CALLS):
+        executed_tool_calls = 0
+
+        while executed_tool_calls < MAX_TOOL_CALLS:
             try:
                 response = self.client.chat.completions.create(
                     model=MODEL_NAME,
@@ -97,25 +99,27 @@ class LLMToolAgent:
             if not assistant_message.tool_calls:
                 return assistant_message.content or "模型没有返回可显示的回答。"
 
-            if len(assistant_message.tool_calls) != 1:
-                return MULTIPLE_TOOL_CALLS_MESSAGE
-
-            tool_call = assistant_message.tool_calls[0]
-            result, error = self._run_tool(
-                tool_call.function.name,
-                tool_call.function.arguments,
-            )
-            if error:
-                return error
+            if len(assistant_message.tool_calls) > MAX_TOOL_CALLS - executed_tool_calls:
+                return TOOL_CALL_LIMIT_MESSAGE
 
             messages.append(assistant_message)
-            messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": str(result),
-                }
-            )
+
+            for tool_call in assistant_message.tool_calls:
+                result, error = self._run_tool(
+                    tool_call.function.name,
+                    tool_call.function.arguments,
+                )
+                if error:
+                    return error
+
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": str(result),
+                    }
+                )
+                executed_tool_calls += 1
 
         try:
             final_response = self.client.chat.completions.create(

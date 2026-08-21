@@ -1,8 +1,10 @@
+import importlib.util
 from copy import deepcopy
 from types import SimpleNamespace
 
-from llm_agent import LLMToolAgent, MISSING_KEY_MESSAGE, TOOL_SCHEMAS
-
+from app.config import MISSING_KEY_MESSAGE
+from app.llm_agent import LLMToolAgent
+from app.tool_schemas import TOOL_SCHEMAS
 
 class FakeClient:
     def __init__(self, responses: list[object]):
@@ -547,3 +549,34 @@ def test_agent_handles_confirmation_commands_without_an_api_key():
 
     assert agent.run("确认") == "当前没有待确认的操作。"
     assert agent.run("取消") == "当前没有待确认的操作。"
+
+def test_config_module_exists():
+    try:
+        module_spec = importlib.util.find_spec("app.config")
+    except ModuleNotFoundError:
+        module_spec = None
+
+    assert module_spec is not None
+
+def test_tool_schemas_module_provides_four_tools():
+    try:
+        from app.tool_schemas import TOOL_SCHEMAS
+    except ModuleNotFoundError:
+        TOOL_SCHEMAS = []
+
+    tool_names = [tool["function"]["name"] for tool in TOOL_SCHEMAS]
+
+    assert tool_names == [
+        "upper_text",
+        "count_words",
+        "summarize_text",
+        "save_note",
+    ]
+
+def test_app_llm_agent_module_exports_agent_class():
+    try:
+        from app.llm_agent import LLMToolAgent as AppLLMToolAgent
+    except ModuleNotFoundError:
+        AppLLMToolAgent = None
+
+    assert AppLLMToolAgent is not None

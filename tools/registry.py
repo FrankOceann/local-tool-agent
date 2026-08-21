@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 from tools.note_tools import save_note
 from tools.text_tools import count_words, summarize_text, upper_text
+from tools.file_tools import read_file
 
 @dataclass(frozen=True)
 class ToolDefinition:
@@ -46,6 +47,13 @@ TOOL_DEFINITIONS = [
         function=save_note,
         permission="confirmation_required",
         description="Simulate saving a note after user confirmation.",
+        parameters=TEXT_PARAMETERS,
+    ),
+    ToolDefinition(
+        name="read_file",
+        function=read_file,
+        permission="auto",
+        description="Read a UTF-8 text file from the allowed data directory.",
         parameters=TEXT_PARAMETERS,
     ),
 ]

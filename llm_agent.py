@@ -3,8 +3,9 @@ import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from tools import TOOL_PERMISSIONS, count_words, save_note, summarize_text, upper_text
-
+from tools.note_tools import save_note
+from tools.registry import TOOL_PERMISSIONS
+from tools.text_tools import count_words, summarize_text, upper_text
 
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
 API_CALL_ERROR_MESSAGE = "调用模型服务失败，请稍后重试。"

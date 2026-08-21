@@ -558,7 +558,7 @@ def test_config_module_exists():
 
     assert module_spec is not None
 
-def test_tool_schemas_module_provides_four_tools():
+def test_tool_schemas_module_provides_five_tools():
     try:
         from app.tool_schemas import TOOL_SCHEMAS
     except ModuleNotFoundError:
@@ -571,6 +571,7 @@ def test_tool_schemas_module_provides_four_tools():
         "count_words",
         "summarize_text",
         "save_note",
+        "read_file",
     ]
 
 def test_app_llm_agent_module_exports_agent_class():

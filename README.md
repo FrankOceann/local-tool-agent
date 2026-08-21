@@ -34,12 +34,12 @@ week06-llm-tool-calling/
 ├── agent.py            # 第一阶段：规则式 LocalToolAgent
 ├── app/
 │   ├── config.py        # 模型配置、系统提示和错误信息
-│   ├── tool_schemas.py  # 发送给模型的工具 Schema
+│   ├── tool_schemas.py  # 从工具定义导出的、发送给模型的 Schema
 │   └── llm_agent.py     # 模型调用、参数校验、权限确认和工具调度
 ├── tools/
 │   ├── text_tools.py    # 三个自动文本工具
 │   ├── note_tools.py    # 需要确认的模拟保存工具
-│   └── registry.py      # 唯一的工具函数注册表与权限表
+│   └── registry.py      # 工具定义，以及自动生成的注册表、权限表和 Schema
 ├── main.py             # 命令行入口
 ├── tests/
 │   ├── test_main.py     # 第一阶段的规则式 Agent 测试
@@ -56,7 +56,7 @@ week06-llm-tool-calling/
 
 - `text_tools.py`：`upper_text(text)`、`count_words(text)` 和 `summarize_text(text)` 三个自动文本工具。
 - `note_tools.py`：`save_note(text)`；模拟保存笔记，只返回成功文字，不创建或修改任何文件。
-- `registry.py`：唯一的工具函数注册表 `TOOL_REGISTRY` 与权限表 `TOOL_PERMISSIONS`。
+- `registry.py`：唯一的工具定义列表 `TOOL_DEFINITIONS`。每项定义同时包含工具函数、权限、说明和参数 Schema；代码会据此自动生成函数注册表 `TOOL_REGISTRY`、权限表 `TOOL_PERMISSIONS` 和模型 Schema `TOOL_SCHEMAS`。
 
 `TOOL_PERMISSIONS` 中，前三个文本工具是 `auto`（自动执行），`save_note` 是 `confirmation_required`（需要确认）。
 
@@ -211,6 +211,7 @@ DeepSeek 决定继续调用工具或输出最终回答
 4. **Agent 循环**：每轮可包含一个或多个工具；每个结果必须携带对应的 `tool_call_id`，模型才能继续决定下一项工具；单次请求最多执行三次。
 5. **可测试性**：用 Fake Client 模拟模型响应，避免测试依赖网络和真实 API Key。
 6. **最小权限与人工确认**：模型可以提出调用建议，但是否执行敏感操作由 Python 和用户共同决定；确认、取消和待确认状态不能交给模型猜测。
+7. **单一事实来源**：新增工具时只添加一项 `ToolDefinition`；函数注册表、权限表和模型 Schema 会自动同步生成，避免三处重复维护。
 
 ## 当前限制与下一步
 

@@ -1,6 +1,6 @@
-from tools import count_words, save_note, upper_text
 from agent import LocalToolAgent
-import tools
+from tools.note_tools import save_note
+from tools.text_tools import count_words, summarize_text, upper_text
 
 def test_upper_text():
     assert upper_text("hello") == "HELLO"
@@ -26,7 +26,7 @@ def test_agent_rejects_unsupported_request():
         "暂不支持这个请求。可使用：大写 <文字> 或 统计单词 <英文文字>"
     )
 
-from llm_agent import LLMToolAgent
+from app.llm_agent import LLMToolAgent
 from main import run_once
 
 
@@ -36,10 +36,19 @@ def test_run_once_returns_llm_tool_agent_result(monkeypatch):
     assert run_once("任意请求") == "MODEL RESULT"
 
 def test_summarize_text_keeps_first_two_sentences():
-    summarize_text = getattr(tools, "summarize_text", None)
 
-    assert summarize_text is not None
     assert summarize_text("第一句。第二句。第三句。") == "第一句。第二句。"
 
 def test_save_note_returns_a_simulated_success_message():
     assert save_note("明天学习 Agent") == "已模拟保存笔记：明天学习 Agent"
+
+import importlib.util
+
+
+def test_text_tools_module_exists():
+    try:
+        module_spec = importlib.util.find_spec("tools.text_tools")
+    except ModuleNotFoundError:
+        module_spec = None
+
+    assert module_spec is not None

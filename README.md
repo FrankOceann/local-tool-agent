@@ -31,32 +31,42 @@
 week06-llm-tool-calling/
 ├── .env.example        # API Key 配置示例，不含真实密钥
 ├── .gitignore          # 忽略 .env、缓存和隔离工作区
-├── tools.py            # 四个本地工具与权限映射
 ├── agent.py            # 第一阶段：规则式 LocalToolAgent
-├── llm_agent.py        # 第二阶段：由 DeepSeek 决定是否调用工具
+├── app/
+│   ├── config.py        # 模型配置、系统提示和错误信息
+│   ├── tool_schemas.py  # 发送给模型的工具 Schema
+│   └── llm_agent.py     # 模型调用、参数校验、权限确认和工具调度
+├── tools/
+│   ├── text_tools.py    # 三个自动文本工具
+│   ├── note_tools.py    # 需要确认的模拟保存工具
+│   └── registry.py      # 唯一的工具函数注册表与权限表
 ├── main.py             # 命令行入口
-├── test_main.py        # 第一阶段的规则式 Agent 测试
-├── test_llm_agent.py   # LLM Tool Calling 的离线测试
+├── tests/
+│   ├── test_main.py     # 第一阶段的规则式 Agent 测试
+│   └── test_llm_agent.py # LLM Tool Calling 的离线测试
 ├── requirements.txt    # 项目依赖
 └── README.md           # 项目说明
 ```
 
 ## 核心模块说明
 
-### `tools.py`：工具层
+### `tools/`：工具层
 
 这里是真正做事的 Python 函数：
 
-- `upper_text(text)`：将文本转为大写。
-- `count_words(text)`：统计英文单词数量。
-- `summarize_text(text)`：保留文本前两句作为简短摘要。
-- `save_note(text)`：模拟保存笔记；只返回成功文字，不创建或修改任何文件。
+- `text_tools.py`：`upper_text(text)`、`count_words(text)` 和 `summarize_text(text)` 三个自动文本工具。
+- `note_tools.py`：`save_note(text)`；模拟保存笔记，只返回成功文字，不创建或修改任何文件。
+- `registry.py`：唯一的工具函数注册表 `TOOL_REGISTRY` 与权限表 `TOOL_PERMISSIONS`。
 
-`TOOL_PERMISSIONS` 是工具权限表：前三个文本工具是 `auto`（自动执行），`save_note` 是 `confirmation_required`（需要确认）。
+`TOOL_PERMISSIONS` 中，前三个文本工具是 `auto`（自动执行），`save_note` 是 `confirmation_required`（需要确认）。
 
 大模型不会直接执行电脑中的 Python；它只能提出“调用哪个工具、传什么参数”。真正执行工具的是这一层代码。
 
-### `llm_agent.py`：Agent 调度层
+### `app/`：Agent 调度层
+
+- `config.py`：模型配置、系统提示和中文错误信息。
+- `tool_schemas.py`：发送给模型的工具 Schema；只描述工具，不执行工具函数。
+- `llm_agent.py`：模型调用、参数校验、权限确认和工具调度。
 
 `LLMToolAgent` 负责整个 Tool Calling 流程：
 
@@ -64,7 +74,7 @@ week06-llm-tool-calling/
 2. 把可用工具的名称、用途和参数格式发送给 DeepSeek。
 3. 接收模型的决定：直接回答，或请求调用一个或多个工具。
 4. 校验工具调用是否安全、参数是否正确，并按权限等级决定是否需要人工确认。
-5. 执行 `tools.py` 中对应的函数，或保存一项待确认操作。
+5. 执行 `tools/` 中对应的函数，或保存一项待确认操作。
 6. 用户输入“确认”时由 Python 直接执行待确认的模拟工具；输入“取消”时清空该操作。
 7. 将自动工具的结果发回模型，获得适合用户阅读的最终回答。
 
@@ -83,12 +93,12 @@ week06-llm-tool-calling/
 
 运行 `python main.py` 后，它会读取你的输入，交给 `LLMToolAgent`，最后把回答打印到终端。
 
-### 测试文件：`test_main.py` 与 `test_llm_agent.py`
+### `tests/`：测试文件
 
 测试保证修改代码后，原有能力不会被意外破坏。
 
-- `test_main.py`：验证基础工具和规则式 Agent。
-- `test_llm_agent.py`：使用假的模型客户端，测试直接回答、工具调用、异常处理和参数校验；运行时不消耗 API 额度。
+- `tests/test_main.py`：验证基础工具和规则式 Agent。
+- `tests/test_llm_agent.py`：使用假的模型客户端，测试直接回答、工具调用、异常处理和参数校验；运行时不消耗 API 额度。
 
 ## 配置与安装
 
@@ -155,7 +165,7 @@ python
 ```
 
 ```python
-from llm_agent import LLMToolAgent
+from app.llm_agent import LLMToolAgent
 agent = LLMToolAgent()
 agent.run("请把明天学习 Agent 保存为笔记")
 agent.run("确认")
@@ -172,7 +182,7 @@ python -m pytest -q
 当前应看到：
 
 ```text
-30 passed
+34 passed
 ```
 
 ## Agent 工作流程

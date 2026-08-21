@@ -1,4 +1,4 @@
-from tools import count_words, upper_text
+from tools.text_tools import count_words, upper_text
 
 
 class LocalToolAgent:

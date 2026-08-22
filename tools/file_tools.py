@@ -15,3 +15,17 @@ def read_file(filename: str) -> str:
         return "文件不存在。"
 
     return file_path.read_text(encoding="utf-8")
+
+def search_files(query: str) -> str:
+    results = []
+
+    for file_path in DATA_DIRECTORY.glob("*.txt"):
+        content = file_path.read_text(encoding="utf-8")
+
+        if query in content:
+            results.append(f"{file_path.name}: {content}")
+
+    if not results:
+        return "没有找到匹配内容。"
+
+    return "\n".join(results)

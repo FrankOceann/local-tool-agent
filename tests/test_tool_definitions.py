@@ -12,6 +12,7 @@ def test_each_tool_definition_is_exposed_to_the_agent_consistently():
         "summarize_text",
         "save_note",
         "read_file",
+        "search_files",
     ]
 
     for definition in definitions:

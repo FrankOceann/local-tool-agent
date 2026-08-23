@@ -3,6 +3,7 @@ from pathlib import Path
 
 DATA_DIRECTORY = Path(__file__).resolve().parent.parent / "data"
 MAX_SEARCH_RESULTS = 3
+MAX_FILES_TO_READ = 2
 
 def read_file(filename: str) -> str:
     allowed_directory = DATA_DIRECTORY.resolve()
@@ -15,6 +16,26 @@ def read_file(filename: str) -> str:
         return "文件不存在。"
 
     return file_path.read_text(encoding="utf-8")
+
+def read_files(filenames: str) -> str:
+    requested_filenames = [
+        filename.strip()
+        for filename in filenames.splitlines()
+        if filename.strip()
+    ]
+
+    if not requested_filenames:
+        return "读取文件名不能为空。"
+
+    if len(requested_filenames) > MAX_FILES_TO_READ:
+        return f"一次最多读取 {MAX_FILES_TO_READ} 个文件。"
+    sections = []
+
+    for filename in requested_filenames:
+        content = read_file(filename)
+        sections.append(f"=== {filename} ===\n{content}")
+
+    return "\n\n".join(sections)
 
 def search_files(query: str) -> str:
     normalized_query = query.strip().casefold()

@@ -179,3 +179,48 @@ def test_search_files_ranks_content_matches_by_occurrence_count(
     result = file_tools.search_files("agent")
 
     assert result == "zeta_notes.txt\nalpha_notes.txt"
+
+def test_read_files_returns_the_contents_of_multiple_allowed_files(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+    (tmp_path / "agent.txt").write_text(
+        "Agent 可以调用工具。",
+        encoding="utf-8",
+    )
+    (tmp_path / "rag.txt").write_text(
+        "RAG 可以检索资料。",
+        encoding="utf-8",
+    )
+
+    result = file_tools.read_files("agent.txt\nrag.txt")
+
+    assert result == (
+        "=== agent.txt ===\n"
+        "Agent 可以调用工具。\n\n"
+        "=== rag.txt ===\n"
+        "RAG 可以检索资料。"
+    )
+
+def test_read_files_rejects_more_than_two_filenames(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    result = file_tools.read_files(
+        "first.txt\nsecond.txt\nthird.txt"
+    )
+
+    assert result == "一次最多读取 2 个文件。"
+
+def test_read_files_rejects_blank_filenames(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    result = file_tools.read_files("   \n  ")
+
+    assert result == "读取文件名不能为空。"

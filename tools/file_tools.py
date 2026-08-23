@@ -22,7 +22,7 @@ def search_files(query: str) -> str:
     for file_path in DATA_DIRECTORY.glob("*.txt"):
         content = file_path.read_text(encoding="utf-8")
 
-        if query in content:
+        if query.casefold() in content.casefold():
             results.append(file_path.name)
 
     if not results:

@@ -60,3 +60,14 @@ def test_search_files_returns_a_clear_message_when_nothing_matches(
     result = file_tools.search_files("数据库")
 
     assert result == "没有找到匹配内容。"
+
+def test_search_files_ignores_english_letter_case(tmp_path, monkeypatch):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+    (tmp_path / "agent_basics.txt").write_text(
+        "Agent 可以调用工具。",
+        encoding="utf-8",
+    )
+
+    result = file_tools.search_files("agent")
+
+    assert result == "agent_basics.txt"

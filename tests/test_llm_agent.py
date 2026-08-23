@@ -599,4 +599,4 @@ def test_agent_tells_model_to_search_then_read_files():
 
     system_message = client.calls[0]["messages"][0]["content"]
 
-    assert "先使用 search_files 定位文件，再使用 read_file 读取完整内容" in system_message
+    assert "若有多个候选文件，结合用户问题选择最相关的一份" in system_message

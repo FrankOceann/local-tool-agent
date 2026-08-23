@@ -71,3 +71,17 @@ def test_search_files_ignores_english_letter_case(tmp_path, monkeypatch):
     result = file_tools.search_files("agent")
 
     assert result == "agent_basics.txt"
+
+def test_search_files_matches_filenames_case_insensitively(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+    (tmp_path / "agent_safety.txt").write_text(
+        "文件访问必须校验权限。",
+        encoding="utf-8",
+    )
+
+    result = file_tools.search_files("SAFETY")
+
+    assert result == "agent_safety.txt"

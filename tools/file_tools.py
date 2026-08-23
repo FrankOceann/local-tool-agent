@@ -18,11 +18,15 @@ def read_file(filename: str) -> str:
 
 def search_files(query: str) -> str:
     results = []
+    normalized_query = query.casefold()
 
     for file_path in DATA_DIRECTORY.glob("*.txt"):
         content = file_path.read_text(encoding="utf-8")
 
-        if query.casefold() in content.casefold():
+        matches_filename = normalized_query in file_path.name.casefold()
+        matches_content = normalized_query in content.casefold()
+
+        if matches_filename or matches_content:
             results.append(file_path.name)
 
     if not results:

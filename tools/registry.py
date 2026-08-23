@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 from tools.note_tools import save_note
 from tools.text_tools import count_words, summarize_text, upper_text
-from tools.file_tools import read_file, search_files
+from tools.file_tools import read_file, read_files, search_files
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,16 @@ TOOL_DEFINITIONS = [
         function=read_file,
         permission="auto",
         description="Read a UTF-8 text file from the allowed data directory.",
+        parameters=TEXT_PARAMETERS,
+    ),
+    ToolDefinition(
+        name="read_files",
+        function=read_files,
+        permission="auto",
+        description=(
+            "Read up to two UTF-8 text files from the allowed "
+            "directory. Pass one filename per line."
+        ),
         parameters=TEXT_PARAMETERS,
     ),
     ToolDefinition(

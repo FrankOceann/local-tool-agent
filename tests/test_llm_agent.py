@@ -558,7 +558,7 @@ def test_config_module_exists():
 
     assert module_spec is not None
 
-def test_tool_schemas_module_provides_six_tools():
+def test_tool_schemas_module_provides_seven_tools():
     try:
         from app.tool_schemas import TOOL_SCHEMAS
     except ModuleNotFoundError:
@@ -572,6 +572,7 @@ def test_tool_schemas_module_provides_six_tools():
         "summarize_text",
         "save_note",
         "read_file",
+        "read_files",
         "search_files",
     ]
 
@@ -583,7 +584,7 @@ def test_app_llm_agent_module_exports_agent_class():
 
     assert AppLLMToolAgent is not None
 
-def test_agent_tells_model_to_search_then_read_files():
+def test_agent_tells_model_to_search_then_read_one_or_two_files():
     client = FakeClient(
         [
             response_with(
@@ -599,4 +600,7 @@ def test_agent_tells_model_to_search_then_read_files():
 
     system_message = client.calls[0]["messages"][0]["content"]
 
-    assert "若有多个候选文件，结合用户问题选择最相关的一份" in system_message
+    assert "search_files" in system_message
+    assert "read_files" in system_message
+    assert "最多两份候选文件" in system_message
+    assert "summarize_text" in system_message

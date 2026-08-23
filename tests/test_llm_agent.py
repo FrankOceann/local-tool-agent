@@ -582,3 +582,21 @@ def test_app_llm_agent_module_exports_agent_class():
         AppLLMToolAgent = None
 
     assert AppLLMToolAgent is not None
+
+def test_agent_tells_model_to_search_then_read_files():
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content="我会先搜索，再读取相关文件。",
+                    tool_calls=None,
+                )
+            )
+        ]
+    )
+
+    LLMToolAgent(client=client, api_key="test-key").run("帮我查找资料")
+
+    system_message = client.calls[0]["messages"][0]["content"]
+
+    assert "先使用 search_files 定位文件，再使用 read_file 读取完整内容" in system_message

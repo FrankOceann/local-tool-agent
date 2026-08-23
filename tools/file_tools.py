@@ -23,7 +23,7 @@ def search_files(query: str) -> str:
         content = file_path.read_text(encoding="utf-8")
 
         if query in content:
-            results.append(f"{file_path.name}: {content}")
+            results.append(file_path.name)
 
     if not results:
         return "没有找到匹配内容。"

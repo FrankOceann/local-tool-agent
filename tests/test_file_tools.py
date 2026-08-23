@@ -31,7 +31,7 @@ def test_read_file_returns_a_clear_message_when_the_file_is_missing(
 
     assert result == "文件不存在。"
 
-def test_search_files_returns_the_text_of_matching_files(tmp_path, monkeypatch):
+def test_search_files_returns_matching_filenames(tmp_path, monkeypatch):
     monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
 
     (tmp_path / "agent_basics.txt").write_text(
@@ -45,7 +45,7 @@ def test_search_files_returns_the_text_of_matching_files(tmp_path, monkeypatch):
 
     result = file_tools.search_files("工具")
 
-    assert result == "agent_basics.txt: Agent 可以调用工具。"
+    assert result == "agent_basics.txt"
 
 def test_search_files_returns_a_clear_message_when_nothing_matches(
     tmp_path,

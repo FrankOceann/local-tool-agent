@@ -1,3 +1,4 @@
+from pathlib import Path
 from tools import file_tools
 
 
@@ -85,3 +86,58 @@ def test_search_files_matches_filenames_case_insensitively(
     result = file_tools.search_files("SAFETY")
 
     assert result == "agent_safety.txt"
+
+def test_search_files_rejects_a_blank_keyword(tmp_path, monkeypatch):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    result = file_tools.search_files("   ")
+
+    assert result == "搜索关键词不能为空。"
+
+def test_search_files_sorts_results_when_directory_returns_them_out_of_order(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+    (tmp_path / "alpha.txt").write_text(
+        "包含关键词。",
+        encoding="utf-8",
+    )
+    (tmp_path / "zeta.txt").write_text(
+        "也包含关键词。",
+        encoding="utf-8",
+    )
+
+    original_glob = Path.glob
+    monkeypatch.setattr(
+        Path,
+        "glob",
+        lambda directory, pattern: reversed(
+            list(original_glob(directory, pattern))
+        ),
+    )
+
+    result = file_tools.search_files("关键词")
+
+    assert result == "alpha.txt\nzeta.txt"
+
+def test_search_files_returns_only_the_first_three_sorted_results(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    for filename in [
+        "delta.txt",
+        "alpha.txt",
+        "charlie.txt",
+        "bravo.txt",
+    ]:
+        (tmp_path / filename).write_text(
+            "包含关键词。",
+            encoding="utf-8",
+        )
+
+    result = file_tools.search_files("关键词")
+
+    assert result == "alpha.txt\nbravo.txt\ncharlie.txt"

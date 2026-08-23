@@ -26,14 +26,22 @@ def search_files(query: str) -> str:
 
     for file_path in DATA_DIRECTORY.glob("*.txt"):
         content = file_path.read_text(encoding="utf-8")
+        normalized_content = content.casefold()
 
         matches_filename = normalized_query in file_path.name.casefold()
-        matches_content = normalized_query in content.casefold()
+        content_match_count = normalized_content.count(normalized_query)
+        matches_content = content_match_count > 0
 
         if matches_filename or matches_content:
-            results.append(file_path.name)
+            priority = 0 if matches_filename else 1
+            results.append(
+                (priority, -content_match_count, file_path.name)
+            )
 
     if not results:
         return "没有找到匹配内容。"
 
-    return "\n".join(sorted(results)[:MAX_SEARCH_RESULTS])
+    return "\n".join(
+        filename
+        for _, _, filename in sorted(results)[:MAX_SEARCH_RESULTS]
+    )

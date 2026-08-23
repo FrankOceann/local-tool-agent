@@ -141,3 +141,41 @@ def test_search_files_returns_only_the_first_three_sorted_results(
     result = file_tools.search_files("关键词")
 
     assert result == "alpha.txt\nbravo.txt\ncharlie.txt"
+
+def test_search_files_prioritizes_filename_matches_over_content_matches(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    (tmp_path / "alpha_notes.txt").write_text(
+        "agent agent agent",
+        encoding="utf-8",
+    )
+    (tmp_path / "z_agent_guide.txt").write_text(
+        "普通资料。",
+        encoding="utf-8",
+    )
+
+    result = file_tools.search_files("agent")
+
+    assert result == "z_agent_guide.txt\nalpha_notes.txt"
+
+def test_search_files_ranks_content_matches_by_occurrence_count(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(file_tools, "DATA_DIRECTORY", tmp_path)
+
+    (tmp_path / "alpha_notes.txt").write_text(
+        "agent",
+        encoding="utf-8",
+    )
+    (tmp_path / "zeta_notes.txt").write_text(
+        "agent agent agent",
+        encoding="utf-8",
+    )
+
+    result = file_tools.search_files("agent")
+
+    assert result == "zeta_notes.txt\nalpha_notes.txt"

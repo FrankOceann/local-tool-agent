@@ -240,7 +240,7 @@ git commit -m "feat: add in-memory RAG retrieval index"
 - Consumes: Task 2 `EmbeddingProvider` and the installed `openai.OpenAI` SDK.
 - Produces: `OpenAIEmbeddingProvider(client: object | None = None, api_key: str | None = None)` and `EMBEDDING_MODEL_NAME = "text-embedding-3-small"`.
 
-- [ ] **Step 1: Write failing fake-client and missing-key tests**
+- [x] **Step 1: Write failing fake-client and missing-key tests**
 
 ```python
 from app.embeddings import OpenAIEmbeddingProvider
@@ -273,13 +273,13 @@ def test_openai_provider_reports_missing_key_without_network():
         provider.embed_texts(["第一段"])
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `python -m pytest tests/test_embeddings.py -q`
 
 Expected: FAIL during collection because `OpenAIEmbeddingProvider` is absent.
 
-- [ ] **Step 3: Implement and isolate the cloud call**
+- [x] **Step 3: Implement and isolate the cloud call**
 
 ```python
 EMBEDDING_MODEL_NAME = "text-embedding-3-small"
@@ -304,7 +304,7 @@ class OpenAIEmbeddingProvider:
 
 Call `load_dotenv()` in the constructor. Read `OPENAI_API_KEY` only when `api_key` is not provided. Create `OpenAI(api_key=self.api_key)` only when a key exists and no fake client was injected. Add empty `OPENAI_API_KEY=` to `.env.example`.
 
-- [ ] **Step 4: Test error wrapping, then make it green**
+- [x] **Step 4: Test error wrapping, then make it green**
 
 ```python
 def test_openai_provider_does_not_expose_key_on_api_error():
@@ -325,7 +325,7 @@ Run: `python -m pytest tests/test_embeddings.py -q`
 
 Expected before wrapping: FAIL with `RuntimeError`. Add the wrapper shown above, then rerun until PASS.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 python -m pytest tests/test_embeddings.py -q

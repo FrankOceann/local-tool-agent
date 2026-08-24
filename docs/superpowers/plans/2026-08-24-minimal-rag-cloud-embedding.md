@@ -46,7 +46,7 @@
 - Consumes: none.
 - Produces: `DocumentChunk` and `split_text(source_file: str, text: str) -> list[DocumentChunk]`; `CHUNK_SIZE` and `CHUNK_OVERLAP`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 from app.rag import CHUNK_OVERLAP, CHUNK_SIZE, split_text
@@ -67,13 +67,13 @@ def test_split_text_ignores_whitespace_only_documents():
     assert split_text("empty.txt", " \n\t ") == []
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `python -m pytest tests/test_rag.py -q`
 
 Expected: FAIL during collection because `app.rag` does not exist.
 
-- [ ] **Step 3: Implement the minimum splitter**
+- [x] **Step 3: Implement the minimum splitter**
 
 ```python
 from dataclasses import dataclass
@@ -100,13 +100,13 @@ def split_text(source_file: str, text: str) -> list[DocumentChunk]:
     ]
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run: `python -m pytest tests/test_rag.py -q; python -m pytest -q`
 
 Expected: two new tests pass; all existing 51 tests remain green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/rag.py tests/test_rag.py

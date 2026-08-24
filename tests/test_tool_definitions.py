@@ -14,6 +14,7 @@ def test_each_tool_definition_is_exposed_to_the_agent_consistently():
         "read_file",
         "read_files",
         "search_files",
+        "search_knowledge_base",
     ]
 
     for definition in definitions:

@@ -3,7 +3,13 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 from app.config import MISSING_KEY_MESSAGE
+from app.config import SYSTEM_PROMPT
 from app.llm_agent import LLMToolAgent
+
+
+def test_system_prompt_requires_real_rag_sources():
+    assert "search_knowledge_base" in SYSTEM_PROMPT
+    assert "不要编造来源" in SYSTEM_PROMPT
 from app.tool_schemas import TOOL_SCHEMAS
 
 class FakeClient:
@@ -558,7 +564,7 @@ def test_config_module_exists():
 
     assert module_spec is not None
 
-def test_tool_schemas_module_provides_seven_tools():
+def test_tool_schemas_module_provides_all_registered_tools():
     try:
         from app.tool_schemas import TOOL_SCHEMAS
     except ModuleNotFoundError:
@@ -574,6 +580,7 @@ def test_tool_schemas_module_provides_seven_tools():
         "read_file",
         "read_files",
         "search_files",
+        "search_knowledge_base",
     ]
 
 def test_app_llm_agent_module_exports_agent_class():

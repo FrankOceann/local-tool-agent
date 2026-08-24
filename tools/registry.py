@@ -4,6 +4,7 @@ from typing import Any
 from tools.note_tools import save_note
 from tools.text_tools import count_words, summarize_text, upper_text
 from tools.file_tools import read_file, read_files, search_files
+from tools.rag_tools import search_knowledge_base
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,16 @@ TOOL_DEFINITIONS = [
         function=search_files,
         permission="auto",
         description="Search UTF-8 text files in the allowed data directory.",
+        parameters=TEXT_PARAMETERS,
+    ),
+    ToolDefinition(
+        name="search_knowledge_base",
+        function=search_knowledge_base,
+        permission="auto",
+        description=(
+            "Search the local data knowledge base and return "
+            "relevant chunks with source references."
+        ),
         parameters=TEXT_PARAMETERS,
     ),
 ]

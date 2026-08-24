@@ -351,7 +351,7 @@ git commit -m "feat: add OpenAI embedding provider"
 - Consumes: Tasks 2–3 `RAGIndex` and `OpenAIEmbeddingProvider`, plus existing `DATA_DIRECTORY` and `TEXT_PARAMETERS`.
 - Produces: automatically registered `search_knowledge_base(text: str) -> str`.
 
-- [ ] **Step 1: Write failing citation and blank-query tests**
+- [x] **Step 1: Write failing citation and blank-query tests**
 
 ```python
 from tools import rag_tools
@@ -384,13 +384,13 @@ def test_search_knowledge_base_rejects_blank_query_without_building_index(monkey
     assert rag_tools.search_knowledge_base("  ") == "检索问题不能为空。"
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `python -m pytest tests/test_rag_tools.py -q`
 
 Expected: FAIL during collection because `tools.rag_tools` is absent.
 
-- [ ] **Step 3: Implement the restricted cache and formatter**
+- [x] **Step 3: Implement the restricted cache and formatter**
 
 ```python
 _RAG_INDEX: RAGIndex | None = None
@@ -421,11 +421,11 @@ def search_knowledge_base(text: str) -> str:
 
 Import `DATA_DIRECTORY` from `tools.file_tools`; no input may alter it. Append an automatic `search_knowledge_base` definition using `TEXT_PARAMETERS` in `tools/registry.py`.
 
-- [ ] **Step 4: Add and pass integration regressions**
+- [x] **Step 4: Add and pass integration regressions**
 
 Extend `tests/test_tool_definitions.py` so its expected final name is `search_knowledge_base`. Add a `tests/test_llm_agent.py` assertion that `SYSTEM_PROMPT` names `search_knowledge_base` and says not to invent source labels. Add a no-result fake-index test expecting `知识库中没有可用的相关资料。`. Run the focused tests before changes and observe failure; add registry/prompt code, then rerun to green.
 
-- [ ] **Step 5: Update docs, verify, and commit**
+- [x] **Step 5: Update docs, verify, and commit**
 
 Add to `README.md`: set `OPENAI_API_KEY` in `.env`; documents and queries are sent to the Embeddings API; the index rebuilds after a process restart; citations identify file and chunk; no content outside `data/` is indexed. Then run:
 

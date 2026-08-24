@@ -486,4 +486,3 @@ Skip this commit when no correction is needed. Never commit `.env`, `test_file_t
 - Spec coverage: Tasks 1–2 cover chunks, metadata, directory boundary, cosine Top-K, empty documents/results, and invalid vectors. Task 3 covers cloud configuration and error/secret boundaries. Task 4 covers cache, tool registration, citations, prompt, and docs. Task 5 covers regression verification and the live Agent demonstration.
 - Placeholder scan: every task has exact paths, interfaces, commands, test assertions, expected RED state, minimal implementation content, and commit message.
 - Type consistency: `EmbeddingProvider.embed_texts` returns `list[list[float]]`; `RAGIndex.build` consumes it; `RAGIndex.search` returns `list[SearchResult]`; the Agent tool converts results into the existing `str` tool contract.
-

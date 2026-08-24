@@ -126,7 +126,7 @@ git commit -m "feat: add RAG document chunking"
 - Consumes: Task 1 `DocumentChunk` and `split_text`.
 - Produces: `EmbeddingProvider.embed_texts(texts: list[str]) -> list[list[float]]`, `SearchResult`, `RAGIndex.build(data_directory: Path, provider: EmbeddingProvider) -> RAGIndex`, and `RAGIndex.search(query: str, top_k: int = 3) -> list[SearchResult]`.
 
-- [ ] **Step 1: Write failing ranking and empty-index tests**
+- [x] **Step 1: Write failing ranking and empty-index tests**
 
 ```python
 from app.rag import RAGIndex
@@ -164,13 +164,13 @@ def test_index_returns_empty_for_blank_query_or_no_chunks(tmp_path):
     assert index.search("怎样安全读取资料？") == []
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `python -m pytest tests/test_rag.py -q`
 
 Expected: FAIL because `RAGIndex` is not defined.
 
-- [ ] **Step 3: Implement the smallest index**
+- [x] **Step 3: Implement the smallest index**
 
 ```python
 # app/embeddings.py
@@ -198,7 +198,7 @@ class RAGIndex:
 
 `build` must sort `data_directory.glob("*.txt")`, skip whitespace-only files, embed non-empty chunks, and reject count/dimension/zero-norm errors with Chinese `ValueError` messages. `search` returns `[]` for blank query or an empty index, clamps `top_k` to 1–3, and orders by `(-score, source_file, chunk_index)`.
 
-- [ ] **Step 4: Add and pass a vector-validation regression test**
+- [x] **Step 4: Add and pass a vector-validation regression test**
 
 ```python
 def test_index_rejects_mismatched_vector_dimensions(tmp_path):
@@ -217,7 +217,7 @@ Run: `python -m pytest tests/test_rag.py -q`
 
 Expected before the guard: FAIL because dimensions are not checked. Add the validation; rerun until PASS.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 python -m pytest tests/test_rag.py -q

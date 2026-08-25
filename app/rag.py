@@ -21,6 +21,45 @@ class SearchResult:
     chunk: DocumentChunk
     score: float
 
+@dataclass(frozen=True)
+class RAGEvaluationCase:
+    name: str
+    question: str
+    expected_source: str | None
+
+@dataclass(frozen=True)
+class RAGEvaluationResult:
+    case: RAGEvaluationCase
+    passed: bool | None
+    retrieved_sources: tuple[str, ...]
+
+RAG_EVALUATION_CASES = (
+    RAGEvaluationCase(
+        "副作用确认",
+        "仅依据本地资料回答：为什么副作用操作必须先由用户确认？请标注每一点的来源。",
+        "rag_long_test.txt#chunk-1",
+    ),
+    RAGEvaluationCase(
+        "路径穿越",
+        "仅依据本地资料回答：程序如何阻止 ../ 造成的路径穿越？请按步骤说明并标注来源。",
+        "rag_long_test.txt#chunk-2",
+    ),
+    RAGEvaluationCase(
+        "Chunk 重叠",
+        "仅依据本地资料回答：Chunk 重叠有什么作用？为什么不能把整篇长文直接交给模型？标注来源。",
+        "rag_long_test.txt#chunk-4",
+    ),
+    RAGEvaluationCase(
+        "服务超时",
+        "仅依据本地资料回答：Embedding 或模型服务超时时，系统应该如何处理？标注来源。",
+        "rag_long_test.txt#chunk-5",
+    ),
+    RAGEvaluationCase(
+        "资料不足",
+        "仅依据本地资料回答：比较北京和上海今天的天气，并标注来源。",
+        None,
+    ),
+)
 
 def split_text(source_file: str, text: str) -> list[DocumentChunk]:
     if not text.strip():
@@ -92,3 +131,75 @@ class RAGIndex:
         left_norm = sqrt(sum(value * value for value in left))
         right_norm = sqrt(sum(value * value for value in right))
         return numerator / (left_norm * right_norm)
+
+def has_expected_source(
+    results: list[SearchResult],
+    expected_source: str,
+) -> bool:
+    return any(
+        f"{result.chunk.source_file}#chunk-{result.chunk.chunk_index}"
+        == expected_source
+        for result in results
+    )
+
+def evaluate_retrieval_cases(
+    index: RAGIndex,
+    cases: tuple[RAGEvaluationCase, ...],
+) -> list[RAGEvaluationResult]:
+    evaluations = []
+
+    for case in cases:
+        results = index.search(case.question)
+        retrieved_sources = tuple(
+            f"{result.chunk.source_file}#chunk-{result.chunk.chunk_index}"
+            for result in results
+        )
+        passed = (
+            None
+            if case.expected_source is None
+            else has_expected_source(results, case.expected_source)
+        )
+        evaluations.append(
+            RAGEvaluationResult(
+                case,
+                passed,
+                retrieved_sources,
+            )
+        )
+
+    return evaluations
+
+def format_evaluation_results(
+    results: list[RAGEvaluationResult],
+) -> str:
+    lines = []
+    automatic_results = [
+        result
+        for result in results
+        if result.passed is not None
+    ]
+
+    for result in results:
+        if result.passed is True:
+            status = "通过"
+        elif result.passed is False:
+            status = "未通过"
+        else:
+            status = "人工检查"
+
+        sources = "、".join(result.retrieved_sources) or "无"
+        lines.append(
+            f"[{status}] {result.case.name} | 实际来源：{sources}"
+        )
+
+    hits = sum(
+        result.passed is True
+        for result in automatic_results
+    )
+    lines.append(
+        f"自动题命中：{hits}/{len(automatic_results)}"
+    )
+    lines.append(
+        f"人工检查：{len(results) - len(automatic_results)}"
+    )
+    return "\n".join(lines)

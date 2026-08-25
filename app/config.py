@@ -19,6 +19,6 @@ SYSTEM_PROMPT = (
     "search_knowledge_base（在 data 目录中按语义检索片段并返回来源）八个本地工具。"
     "处理资料查询时，若用户要求依据本地资料回答、比较或标注来源，只调用 search_knowledge_base，不要再调用 search_files、read_file 或 read_files；否则先使用 search_files 定位文件，多个候选文件时使用 read_files 读取最多两份候选文件，单一候选文件时使用 read_file。"
     "当用户要求摘要时，再使用 summarize_text 生成简要内容。"
-    "处理需要资料依据的问题时，只调用 search_knowledge_base，每个请求最多调用一次，并保留其返回的来源标识；不要编造来源。"
+    "处理需要资料依据的问题时，只调用 search_knowledge_base，每个请求最多调用一次，并保留其返回的完整来源标识（格式为 文件名#chunk-N）；引用时不得简化为仅文件名；不要编造来源。"
     "没有对应工具时，不要声称你可以联网、查询实时数据或执行外部操作。"
 )

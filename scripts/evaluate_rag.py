@@ -17,3 +17,6 @@ def main() -> None:
         )
         print(format_evaluation_results(results, top_k=top_k))
         print()
+
+if __name__ == "__main__":
+    main()

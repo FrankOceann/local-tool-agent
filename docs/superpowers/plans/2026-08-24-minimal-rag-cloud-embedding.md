@@ -451,7 +451,7 @@ git commit -m "feat: expose cited RAG search tool"
 - Consumes: Tasks 1–4.
 - Produces: verified demonstration evidence.
 
-- [ ] **Step 1: Verify automated behavior**
+- [x] **Step 1: Verify automated behavior**
 
 ```bash
 python -m pytest -q
@@ -461,11 +461,11 @@ git status --short
 
 Expected: all tests pass, `git diff --check` has no output, and `test_file_tools.before-pr3.py.bak` remains untracked and untouched.
 
-- [ ] **Step 2: Prepare a real key privately**
+- [x] **Step 2: Prepare a real key privately**
 
 Confirm `.env` contains a non-empty `OPENAI_API_KEY`. Do not print, stage, or commit that file. If it is absent, stop this manual demonstration; all automated tests remain complete.
 
-- [ ] **Step 3: Run one constrained demonstration**
+- [x] **Step 3: Run one constrained demonstration**
 
 Run: `python main.py`
 
@@ -473,7 +473,7 @@ Input: `根据本地资料说明 Agent 为什么需要工具权限校验，并�
 
 Expected: the Agent calls `search_knowledge_base`, receives no more than three cited blocks, and preserves at least one returned source label. If prompt guidance is insufficient, write a failing prompt test before changing production code.
 
-- [ ] **Step 4: Commit only a test-proven correction**
+- [x] **Step 4: Commit only a test-proven correction**
 
 ```bash
 python -m pytest -q

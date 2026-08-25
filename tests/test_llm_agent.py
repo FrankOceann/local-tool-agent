@@ -10,6 +10,8 @@ from app.llm_agent import LLMToolAgent
 def test_system_prompt_requires_real_rag_sources():
     assert "search_knowledge_base" in SYSTEM_PROMPT
     assert "不要编造来源" in SYSTEM_PROMPT
+    assert "只调用 search_knowledge_base" in SYSTEM_PROMPT
+    assert "每个请求最多调用一次" in SYSTEM_PROMPT
 from app.tool_schemas import TOOL_SCHEMAS
 
 class FakeClient:

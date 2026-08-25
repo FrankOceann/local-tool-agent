@@ -1,6 +1,7 @@
 MISSING_KEY_MESSAGE = "未检测到 DEEPSEEK_API_KEY，请在 .env 中配置后重试。"
 API_CALL_ERROR_MESSAGE = "调用模型服务失败，请稍后重试。"
 TOOL_CALL_LIMIT_MESSAGE = "本次请求最多执行 3 次工具调用。"
+UNSTRUCTURED_TOOL_CALL_MESSAGE = "模型没有返回可执行的结构化工具调用，请重新提问。"
 
 MODEL_NAME = "deepseek-v4-flash"
 BASE_URL = "https://api.deepseek.com"

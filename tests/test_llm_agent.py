@@ -48,6 +48,23 @@ def test_agent_returns_a_direct_model_response_without_tools():
     assert LLMToolAgent(client=client, api_key="test-key").run("你能做什么？") == "你好，我可以处理文本。"
 
 
+def test_agent_rejects_tool_call_markup_returned_as_plain_text():
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content="<tool_calls><invoke name=\"read_files\"></invoke></tool_calls>",
+                    tool_calls=None,
+                )
+            )
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run("读取资料")
+
+    assert result == "模型没有返回可执行的结构化工具调用，请重新提问。"
+
+
 def test_agent_returns_readable_error_when_initial_model_request_fails():
     client = FakeClient([RuntimeError("network unavailable")])
 

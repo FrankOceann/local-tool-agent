@@ -14,11 +14,11 @@
 - 支持受限文件读取：`read_file` 只读取项目 `data/` 目录中的 UTF-8 文本文件；它会拒绝越界路径，并对不存在的文件返回可读提示。
 - 支持受限批量文件读取：`read_files` 接收每行一个文件名，一次最多读取 2 份 `data/` 目录内的 UTF-8 文本，并保留每段内容的来源文件名。
 - 支持资料关键词搜索：`search_files` 只搜索项目 `data/` 目录中直接包含的 `.txt` 文件；关键词可匹配文件名或文件正文，英文关键词不区分大小写；空关键词会被拒绝，结果按相关度排序：文件名命中优先，正文命中次数更多的候选排在前面，仍相同时按文件名稳定排序；最多返回 3 个候选。需要多份资料时，Agent 会再调用 `read_files`。
-- 支持带引用的向量检索：`search_knowledge_base` 只索引 `data/` 目录直接包含的 `.txt` 文件，按 400 字符切分并重叠 50 字符；它返回最多 3 段相关资料，每段包含来源文件、片段编号和相似度分数。
+- 支持带引用的向量检索：`search_knowledge_base` 只索引 `data/` 目录直接包含的 `.txt` 文件，按 400 字符切分并重叠 50 字符；它返回最多 3 段相关资料，每段包含来源文件、片段编号和相似度分数。阿里云百炼 `text-embedding-v4` 每批最多处理 10 段文本，程序会自动分批并保持结果顺序。
 - 支持连续或同一轮的多个工具调用：一次用户请求最多执行三次工具；多个工具按模型给出的顺序执行。
 - 工具按风险分级：三个文本工具自动执行；`save_note` 需要人工确认。混合了自动工具与需确认工具的同轮批次会被整体拒绝。
 - 只允许调用已注册的工具，并校验工具名称、JSON 参数和 `text` 参数类型。
-- 对缺少 API Key、模型调用异常、工具超过上限和错误参数等情况返回可读错误信息。
+- 对缺少 API Key、模型调用异常、工具超过上限、错误参数和非结构化 DSML 伪工具调用文本等情况返回可读错误信息。
 - 提供离线测试，不需要真实 API Key 也能验证主要逻辑。
 
 ## 技术栈
@@ -38,22 +38,29 @@ week06-llm-tool-calling/
 ├── agent.py            # 第一阶段：规则式 LocalToolAgent
 ├── app/
 │   ├── config.py        # 模型配置、系统提示和错误信息
+│   ├── embeddings.py    # 阿里云百炼 Embedding Provider 与分批调用
+│   ├── rag.py           # Chunk、向量索引、余弦相似度与 Top-K 排序
 │   ├── tool_schemas.py  # 从工具定义导出的、发送给模型的 Schema
 │   └── llm_agent.py     # 模型调用、参数校验、权限确认和工具调度
 ├── tools/
 │   ├── text_tools.py    # 三个自动文本工具
 │   ├── note_tools.py    # 需要确认的模拟保存工具
 │   ├── file_tools.py    # 受限目录中的文本读取与关键词搜索工具
+│   ├── rag_tools.py     # 受限知识库检索、索引缓存与来源格式化
 │   └── registry.py      # 工具定义，以及自动生成的注册表、权限表和 Schema
 ├── data/                # Agent 可读取的受限资料目录
 │   ├── agent_basics.txt         # Agent 基础概念
 │   ├── agent_safety.txt         # Agent 安全与权限控制
-│   └── python_file_handling.txt # Python 文件处理
+│   ├── python_file_handling.txt # Python 文件处理
+│   └── rag_long_test.txt        # 多 Chunk 长文本检索测试资料
 ├── main.py             # 命令行入口
 ├── tests/
 │   ├── test_file_tools.py       # 受限读取与关键词搜索测试
+│   ├── test_embeddings.py       # 云端 Embedding Provider 与分批调用测试
 │   ├── test_main.py             # 第一阶段的规则式 Agent 测试
 │   ├── test_llm_agent.py        # LLM Tool Calling 的离线测试
+│   ├── test_rag.py              # Chunk、向量索引与 Top-K 测试
+│   ├── test_rag_tools.py        # RAG 工具、缓存与引用格式测试
 │   └── test_tool_definitions.py # 工具注册一致性测试
 ├── requirements.txt    # 项目依赖
 └── README.md           # 项目说明
@@ -136,7 +143,7 @@ DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compa
 
 `.env` 已被 `.gitignore` 忽略。真实密钥绝不能写进代码、README、截图或 Git 提交记录。
 
-向量检索会把 `data/` 中的文本片段和用户检索问题发送到阿里云百炼的 `text-embedding-v4` API；索引只保存在当前 Python 进程内，重启后会重新建立。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
+向量检索会把 `data/` 中的文本片段和用户检索问题发送到阿里云百炼的 `text-embedding-v4` API；索引只保存在当前 Python 进程内，重启后会重新建立。该接口每批最多处理 10 段文本，程序会自动分批。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
 
 ## 运行项目
 
@@ -226,7 +233,7 @@ python -m pytest -q
 当前应看到：
 
 ```text
-63 passed
+66 passed
 ```
 
 ## Agent 工作流程
@@ -265,10 +272,11 @@ DeepSeek 决定继续调用工具或输出最终回答
 
 ## 当前限制与下一步
 
-目前项目已有三个自动文本工具、三个受限资料工具（单文件读取、批量读取与搜索）和一个模拟敏感工具；它已经具备“搜索候选资料 → 读取一份或两份 → 总结”的小型 RAG 流程，但还没有真正的向量检索或多轮对话记忆。同一轮多个工具会按顺序执行，不使用真正并行，单次请求最多执行三次。`main.py` 仍是单次输入入口，尚未做成可持续等待确认的命令行循环。后续可以继续扩展：
+目前项目已有三个自动文本工具、四个受限资料工具（单文件读取、批量读取、关键词搜索与向量检索）和一个模拟敏感工具；它已具备真正的最小 RAG：文档 Chunk、云端 Embedding、本地余弦相似度 Top-K 与来源引用。索引只在当前进程内缓存；重启后会重新向量化资料，因此长资料会产生外部 API 调用成本。同一轮多个工具会按顺序执行，不使用真正并行，单次请求最多执行三次。`main.py` 仍是单次输入入口，尚未做成可持续等待确认的命令行循环。后续可以继续扩展：
 
 - 增加天气、网页搜索、数据库查询等工具。
 - 对互不依赖的工具实现真正并行执行。
 - 加入聊天历史与长期记忆。
 - 将模拟保存替换为受限目录内的真实写入，并增加审计日志和更严格的参数规则。
-- 使用 RAG，让 Agent 先检索自己的资料再回答。
+- 建立 RAG 质量评测集，记录预期来源、Top-K 命中和失败原因，再改进 Chunk、Top-K 或排序策略。
+- 用 FastAPI 暴露上传、建库和查询接口。

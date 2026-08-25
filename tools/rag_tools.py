@@ -1,4 +1,4 @@
-from app.embeddings import OpenAIEmbeddingProvider
+from app.embeddings import DashScopeEmbeddingProvider
 from app.rag import RAGIndex
 from tools.file_tools import DATA_DIRECTORY
 
@@ -11,7 +11,7 @@ def get_rag_index() -> RAGIndex:
     if _RAG_INDEX is None:
         _RAG_INDEX = RAGIndex.build(
             DATA_DIRECTORY,
-            OpenAIEmbeddingProvider(),
+            DashScopeEmbeddingProvider(),
         )
     return _RAG_INDEX
 

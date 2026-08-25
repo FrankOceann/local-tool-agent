@@ -1,5 +1,7 @@
 # Minimal Cloud-Embedding RAG Implementation Plan
 
+> 2026-08-25 修订：Task 3 的 OpenAI Provider 已替换为阿里云百炼 `DashScopeEmbeddingProvider`；配置名为 `DASHSCOPE_API_KEY` 与可选的 `DASHSCOPE_BASE_URL`，模型为 `text-embedding-v4`。原有 OpenAI 计划内容保留为实施历史。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a tested, source-citing RAG tool that embeds allowed text files with OpenAI and retrieves relevant chunks locally.

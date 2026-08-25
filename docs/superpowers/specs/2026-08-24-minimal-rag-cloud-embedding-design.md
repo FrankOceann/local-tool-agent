@@ -1,5 +1,7 @@
 # Week06 最小 RAG（云端 Embedding）设计
 
+> 2026-08-25 修订：经用户确认，真实 Provider 改为阿里云百炼 `text-embedding-v4`，使用 `DASHSCOPE_API_KEY` 与百炼 OpenAI 兼容地址；以下较早的 OpenAI Provider 文字由本修订覆盖。
+
 ## 目标
 
 在现有受限 `data/` 文件检索能力上增加一个可演示、可测试的最小 RAG 链路：将 `.txt` 资料切分为带来源信息的文本块，调用云端 Embedding API 生成向量，用本地余弦相似度选出最相关的内容，并让 Agent 在回答中获得可引用的来源片段。

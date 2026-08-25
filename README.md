@@ -130,12 +130,13 @@ python -m pip install -r requirements.txt
 
 ```text
 DEEPSEEK_API_KEY=你的_DeepSeek_API_Key
-OPENAI_API_KEY=你的_OpenAI_API_Key
+DASHSCOPE_API_KEY=你的_阿里云百炼_API_Key
+DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 ```
 
 `.env` 已被 `.gitignore` 忽略。真实密钥绝不能写进代码、README、截图或 Git 提交记录。
 
-向量检索会把 `data/` 中的文本片段和用户检索问题发送到 OpenAI Embeddings API；索引只保存在当前 Python 进程内，重启后会重新建立。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
+向量检索会把 `data/` 中的文本片段和用户检索问题发送到阿里云百炼的 `text-embedding-v4` API；索引只保存在当前 Python 进程内，重启后会重新建立。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
 
 ## 运行项目
 

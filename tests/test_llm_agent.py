@@ -67,6 +67,26 @@ def test_agent_rejects_tool_call_markup_returned_as_plain_text():
     assert result == "模型没有返回可执行的结构化工具调用，请重新提问。"
 
 
+def test_agent_rejects_dsml_tool_call_markup_returned_as_plain_text():
+    client = FakeClient(
+        [
+            response_with(
+                SimpleNamespace(
+                    content=(
+                        '<｜DSML｜tool_calls>\n'
+                        '<｜DSML｜invoke name="search_knowledge_base">'
+                    ),
+                    tool_calls=None,
+                )
+            )
+        ]
+    )
+
+    result = LLMToolAgent(client=client, api_key="test-key").run("查询资料")
+
+    assert result == "模型没有返回可执行的结构化工具调用，请重新提问。"
+
+
 def test_agent_returns_readable_error_when_initial_model_request_fails():
     client = FakeClient([RuntimeError("network unavailable")])
 

@@ -57,9 +57,12 @@ class LLMToolAgent:
 
             assistant_message = response.choices[0].message
             if not assistant_message.tool_calls:
-                if (
-                    assistant_message.content
-                    and "<tool_calls>" in assistant_message.content
+                if assistant_message.content and (
+                    "<tool_calls>" in assistant_message.content
+                    or (
+                        "DSML" in assistant_message.content
+                        and "tool_calls" in assistant_message.content
+                    )
                 ):
                     return UNSTRUCTURED_TOOL_CALL_MESSAGE
                 return assistant_message.content or "模型没有返回可显示的回答。"

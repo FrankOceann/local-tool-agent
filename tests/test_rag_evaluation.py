@@ -56,8 +56,9 @@ def test_rag_evaluation_cases_include_the_five_manual_scenarios():
 
 def test_evaluate_retrieval_cases_reports_hit_and_retrieved_sources():
     class FakeIndex:
-        def search(self, query):
+        def search(self, query, top_k=3):
             assert query == "如何确认副作用操作？"
+            assert top_k == 2
             return [
                 SearchResult(
                     DocumentChunk(
@@ -86,6 +87,7 @@ def test_evaluate_retrieval_cases_reports_hit_and_retrieved_sources():
     results = rag.evaluate_retrieval_cases(
         FakeIndex(),
         (case,),
+        top_k=2,
     )
 
     assert [
@@ -104,8 +106,9 @@ def test_evaluate_retrieval_cases_reports_hit_and_retrieved_sources():
 
 def test_evaluate_retrieval_cases_marks_missing_knowledge_as_manual_review():
     class FakeIndex:
-        def search(self, query):
+        def search(self, query, top_k=3):
             assert query == "比较北京和上海今天的天气。"
+            assert top_k == 3
             return [
                 SearchResult(
                     DocumentChunk(
@@ -157,9 +160,10 @@ def test_format_evaluation_results_counts_hits_and_manual_reviews():
         ),
     ]
 
-    report = rag.format_evaluation_results(results)
+    report = rag.format_evaluation_results(results, top_k=2)
 
     assert "[通过] 副作用确认" in report
     assert "[人工检查] 资料不足" in report
     assert "自动题命中：1/1" in report
     assert "人工检查：1" in report
+    assert "Top-2 评测结果" in report

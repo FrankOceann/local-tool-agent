@@ -145,11 +145,12 @@ def has_expected_source(
 def evaluate_retrieval_cases(
     index: RAGIndex,
     cases: tuple[RAGEvaluationCase, ...],
+    top_k: int = 3,
 ) -> list[RAGEvaluationResult]:
     evaluations = []
 
     for case in cases:
-        results = index.search(case.question)
+        results = index.search(case.question, top_k=top_k)
         retrieved_sources = tuple(
             f"{result.chunk.source_file}#chunk-{result.chunk.chunk_index}"
             for result in results
@@ -171,8 +172,9 @@ def evaluate_retrieval_cases(
 
 def format_evaluation_results(
     results: list[RAGEvaluationResult],
+    top_k: int = 3,
 ) -> str:
-    lines = []
+    lines = [f"Top-{top_k} 评测结果"]
     automatic_results = [
         result
         for result in results

@@ -12,6 +12,7 @@ from app.config import (
     MODEL_NAME,
     SYSTEM_PROMPT,
     TOOL_CALL_LIMIT_MESSAGE,
+    UNSTRUCTURED_TOOL_CALL_MESSAGE,
 )
 from app.tool_schemas import TOOL_SCHEMAS
 from tools.registry import TOOL_PERMISSIONS, TOOL_REGISTRY
@@ -56,6 +57,14 @@ class LLMToolAgent:
 
             assistant_message = response.choices[0].message
             if not assistant_message.tool_calls:
+                if assistant_message.content and (
+                    "<tool_calls>" in assistant_message.content
+                    or (
+                        "DSML" in assistant_message.content
+                        and "tool_calls" in assistant_message.content
+                    )
+                ):
+                    return UNSTRUCTURED_TOOL_CALL_MESSAGE
                 return assistant_message.content or "模型没有返回可显示的回答。"
 
             if len(assistant_message.tool_calls) > MAX_TOOL_CALLS - executed_tool_calls:

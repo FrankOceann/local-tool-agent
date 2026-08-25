@@ -14,6 +14,7 @@
 - 支持受限文件读取：`read_file` 只读取项目 `data/` 目录中的 UTF-8 文本文件；它会拒绝越界路径，并对不存在的文件返回可读提示。
 - 支持受限批量文件读取：`read_files` 接收每行一个文件名，一次最多读取 2 份 `data/` 目录内的 UTF-8 文本，并保留每段内容的来源文件名。
 - 支持资料关键词搜索：`search_files` 只搜索项目 `data/` 目录中直接包含的 `.txt` 文件；关键词可匹配文件名或文件正文，英文关键词不区分大小写；空关键词会被拒绝，结果按相关度排序：文件名命中优先，正文命中次数更多的候选排在前面，仍相同时按文件名稳定排序；最多返回 3 个候选。需要多份资料时，Agent 会再调用 `read_files`。
+- 支持带引用的向量检索：`search_knowledge_base` 只索引 `data/` 目录直接包含的 `.txt` 文件，按 400 字符切分并重叠 50 字符；它返回最多 3 段相关资料，每段包含来源文件、片段编号和相似度分数。
 - 支持连续或同一轮的多个工具调用：一次用户请求最多执行三次工具；多个工具按模型给出的顺序执行。
 - 工具按风险分级：三个文本工具自动执行；`save_note` 需要人工确认。混合了自动工具与需确认工具的同轮批次会被整体拒绝。
 - 只允许调用已注册的工具，并校验工具名称、JSON 参数和 `text` 参数类型。
@@ -129,9 +130,13 @@ python -m pip install -r requirements.txt
 
 ```text
 DEEPSEEK_API_KEY=你的_DeepSeek_API_Key
+DASHSCOPE_API_KEY=你的_阿里云百炼_API_Key
+DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 ```
 
 `.env` 已被 `.gitignore` 忽略。真实密钥绝不能写进代码、README、截图或 Git 提交记录。
+
+向量检索会把 `data/` 中的文本片段和用户检索问题发送到阿里云百炼的 `text-embedding-v4` API；索引只保存在当前 Python 进程内，重启后会重新建立。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
 
 ## 运行项目
 
@@ -221,7 +226,7 @@ python -m pytest -q
 当前应看到：
 
 ```text
-50 passed
+63 passed
 ```
 
 ## Agent 工作流程

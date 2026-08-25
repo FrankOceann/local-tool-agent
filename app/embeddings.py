@@ -6,6 +6,7 @@ from openai import OpenAI
 
 
 EMBEDDING_MODEL_NAME = "text-embedding-v4"
+EMBEDDING_BATCH_SIZE = 10
 MISSING_EMBEDDING_KEY_MESSAGE = "未检测到 DASHSCOPE_API_KEY，请在 .env 中配置后重试。"
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
@@ -37,11 +38,14 @@ class DashScopeEmbeddingProvider:
         if not self.api_key:
             raise ValueError(MISSING_EMBEDDING_KEY_MESSAGE)
 
-        try:
-            response = self.client.embeddings.create(
-                model=EMBEDDING_MODEL_NAME,
-                input=texts,
-            )
-        except Exception as error:
-            raise ValueError(f"Embedding 服务调用失败：{error}") from error
-        return [item.embedding for item in response.data]
+        embeddings = []
+        for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            try:
+                response = self.client.embeddings.create(
+                    model=EMBEDDING_MODEL_NAME,
+                    input=texts[start:start + EMBEDDING_BATCH_SIZE],
+                )
+            except Exception as error:
+                raise ValueError(f"Embedding 服务调用失败：{error}") from error
+            embeddings.extend(item.embedding for item in response.data)
+        return embeddings

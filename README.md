@@ -37,6 +37,7 @@ week06-llm-tool-calling/
 ├── .gitignore          # 忽略 .env、缓存和隔离工作区
 ├── agent.py            # 第一阶段：规则式 LocalToolAgent
 ├── app/
+│   ├── api.py           # FastAPI 知识库查询接口
 │   ├── config.py        # 模型配置、系统提示和错误信息
 │   ├── embeddings.py    # 阿里云百炼 Embedding Provider 与分批调用
 │   ├── rag.py           # Chunk、向量索引、余弦相似度与 Top-K 排序
@@ -58,6 +59,7 @@ week06-llm-tool-calling/
 │   ├── test_file_tools.py       # 受限读取与关键词搜索测试
 │   ├── test_embeddings.py       # 云端 Embedding Provider 与分批调用测试
 │   ├── test_main.py             # 第一阶段的规则式 Agent 测试
+│   ├── test_api.py              # FastAPI 查询接口的离线测试
 │   ├── test_llm_agent.py        # LLM Tool Calling 的离线测试
 │   ├── test_rag.py              # Chunk、向量索引与 Top-K 测试
 │   ├── test_rag_tools.py        # RAG 工具、缓存与引用格式测试
@@ -144,6 +146,25 @@ DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compa
 `.env` 已被 `.gitignore` 忽略。真实密钥绝不能写进代码、README、截图或 Git 提交记录。
 
 向量检索会把 `data/` 中的文本片段和用户检索问题发送到阿里云百炼的 `text-embedding-v4` API；索引只保存在当前 Python 进程内，重启后会重新建立。该接口每批最多处理 10 段文本，程序会自动分批。返回结果会标注来源文件和片段编号，且不会索引或读取 `data/` 目录外的内容。
+
+## FastAPI 查询接口
+
+启动本地服务：
+
+```bat
+"D:\桌面\所有codex项目\AI agent 开发\python 学习\week06-llm-tool-calling\.venv\Scripts\python.exe" -m uvicorn app.api:app --reload
+```
+
+打开 `http://127.0.0.1:8000/docs`，在 `POST /knowledge-base/query` 点击 **Try it out**，输入：
+
+```json
+{
+  "question": "如何确认副作用操作？",
+  "top_k": 3
+}
+```
+
+接口会返回 `results`；每条结果包含 `source`、`score` 和 `content`。`question` 为空或 `top_k` 不在 1 到 3 时，接口会返回 HTTP 422。检索不到资料时返回 HTTP 200 和空数组 `{"results": []}`。
 
 ## 运行项目
 
@@ -279,4 +300,4 @@ DeepSeek 决定继续调用工具或输出最终回答
 - 加入聊天历史与长期记忆。
 - 将模拟保存替换为受限目录内的真实写入，并增加审计日志和更严格的参数规则。
 - 建立 RAG 质量评测集，记录预期来源、Top-K 命中和失败原因，再改进 Chunk、Top-K 或排序策略。
-- 用 FastAPI 暴露上传、建库和查询接口。
+- 当前已用 FastAPI 暴露只读查询接口；后续再增加受限上传与建库接口。

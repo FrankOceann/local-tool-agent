@@ -171,6 +171,32 @@ DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compa
 
 接口会返回 `results`；每条结果包含 `source`、`score` 和 `content`。`question` 为空或 `top_k` 不在 1 到 3 时，接口会返回 HTTP 422。检索不到资料时返回 HTTP 200 和空数组 `{"results": []}`。
 
+## Docker 可复现启动
+
+先确认 Docker Desktop 已启动。进入项目目录后构建镜像：
+
+```bat
+cd /d "你克隆到本机的\local-tool-agent"
+docker build -t local-tool-agent-rag-api .
+```
+
+在项目根目录保留本机自己的 `.env` 文件，并配置真实的云端 Embedding 环境变量：
+
+```text
+DASHSCOPE_API_KEY=你的_阿里云百炼_API_Key
+DASHSCOPE_BASE_URL=https://你的_WorkspaceId.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+```
+
+启动容器：
+
+```bat
+docker run --rm --name local-tool-agent-rag-api -p 8000:8000 --env-file .env local-tool-agent-rag-api
+```
+
+然后打开 `http://127.0.0.1:8000/docs`，或向 `POST /knowledge-base/query` 发送请求。`.env` 不会被复制进镜像，也不应提交到 Git。
+
+容器首次真实查询会读取镜像中的 `data/` 资料，并调用阿里云百炼 Embedding 服务建立进程内索引，因此会产生网络请求和可能的 API 费用；容器重启后会重新建立索引。按 `Ctrl+C` 可停止前台容器；由于使用了 `--rm`，停止后 Docker 会自动删除该容器。
+
 ## 运行项目
 
 ```bat

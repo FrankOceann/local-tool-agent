@@ -47,6 +47,9 @@ def test_query_knowledge_base_returns_structured_results():
         {"question": "   "},
         {"question": "问题", "top_k": 0},
         {"question": "问题", "top_k": 4},
+        {"question": "问题", "top_k": "2"},
+        {"question": "问题", "top_k": True},
+        {"question": "问题", "top_k": 2.0},
     ],
 )
 def test_query_knowledge_base_rejects_invalid_request(payload):

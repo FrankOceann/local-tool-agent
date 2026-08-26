@@ -12,7 +12,7 @@ app = FastAPI(title="Local Tool Agent RAG API")
 
 class QueryRequest(BaseModel):
     question: str
-    top_k: Annotated[int, Field(ge=1, le=3)] = 3
+    top_k: Annotated[int, Field(strict=True, ge=1, le=3)] = 3
 
     @field_validator("question")
     @classmethod
